@@ -38,7 +38,7 @@ group_covid_data = {
     "county_col" : "state",
     "state_fmt" : "name",
     "load_cols" : [
-        "start_date", "fips", "cases", "deaths"
+        "date", "start_date", "fips", "cases", "deaths"
     ]
 
 }

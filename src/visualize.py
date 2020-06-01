@@ -96,10 +96,11 @@ def plot_cols(df, xcols, ycols, xlabel, ylabel, scale=[linear, linear], save=Tru
 
 def plot_classwise(df, class_col, xcol, ycol, xlabel, ylabel, scale=[linear, linear], save=True, filename=None):
     classes = set(df[class_col])
+    this_date = df['date'].value_counts().idxmax()
 
     qlo = .05
     qhi = .95
-    series_formats = [".r",".b",".g",".c","om","oy"]
+    series_formats = [".r",".b",".g",".c",".m",".y"]
     for c, fmt in zip(classes, series_formats):
         where = df[df[class_col] == c]
         x = where[xcol]
@@ -115,7 +116,7 @@ def plot_classwise(df, class_col, xcol, ycol, xlabel, ylabel, scale=[linear, lin
     plt.plot
     plt.xlabel("{}".format(xlabel))
     plt.ylabel("{}".format(ylabel))
-    plt.title('{} vs {} by {}'.format(xcol, ycol, class_col))
+    plt.title('[{}] {} vs {} by {}'.format(this_date, xcol, ycol, class_col))
     plt.legend()
     if save:
         if not filename:
@@ -129,13 +130,14 @@ def entry():
         data = pd.read_csv(datafile)
 
     data = data.drop(columns='fips')
-    literal_eval_cols = ['deaths', 'cases']
+    literal_eval_cols = ['deaths', 'cases', 'date']
     for col in literal_eval_cols:
         data[col] = data[col].apply(literal_eval)
 
     num_dates = max(data['start_date'])
     cases_datewise = []
     deaths_datewise = []
+    dates_datewise = []
     print("ALIGNING covid data")
     for date_id in range(num_dates-1):
         def data_atdate(series_col, row):
@@ -150,8 +152,10 @@ def entry():
         #pdb.set_trace()
         deaths = data.apply(partial(data_atdate, 'deaths'), axis=1)
         cases = data.apply(partial(data_atdate, 'cases'), axis=1)
+        dates = data.apply(partial(data_atdate, 'date'), axis=1)
         deaths_datewise.append(deaths)
         cases_datewise.append(cases)
+        dates_datewise.append(dates)
         sys.stdout.write("\r{}%".format(int(date_id/num_dates * 100)))
         sys.stdout.flush()
 
@@ -171,18 +175,24 @@ def entry():
 
     max_deaths_sqmi = 0.0
     max_cases_sqmi = 0.0
+    max_med_income = 0.0 
     def covid_ondate(df, dateid):
         nonlocal max_deaths_sqmi
         nonlocal max_cases_sqmi
+        nonlocal max_med_income
         date_deaths = deaths_datewise[dateid-1]
         date_cases = cases_datewise[dateid-1]
+        date_dates = dates_datewise[dateid-1]
         ondate = df
         ondate['deaths'] = date_deaths
         ondate['cases'] = date_cases
+        ondate['date'] = date_dates
         ondate = ondate[(pd.notnull(date_deaths)) & (pd.notnull(date_cases))]
         ondate = make_statistics(ondate)
         max_deaths_sqmi = np.max([max_deaths_sqmi, ondate['deaths_sqmi'].quantile(.95)])
         max_cases_sqmi = np.max([max_cases_sqmi, ondate['cases_sqmi'].quantile(.95)])
+        max_med_income = np.max([max_med_income, ondate['med_income_percap'].quantile(.95)])
+
         return ondate
 
     deathbounds = (np.min(deaths_datewise), np.max(deaths_datewise))
@@ -192,16 +202,21 @@ def entry():
         xcol = 'pop_sqmi'
         deathcol = 'deaths_sqmi'
         casecol = 'cases_sqmi'
-        xbounds = (0, max_pop_sqmi) #constant for all graphs
+        incomecol = 'med_income_percap'
+        xbounds = (0, np.log(max_pop_sqmi)) #constant for all graphs
+        incomebounds = (0, max_med_income)
         deathbounds = (0, max_deaths_sqmi) #using max computed from aggregated deaths
         casebounds = (0, max_cases_sqmi) #using max computed from aggregated deaths
         
-        plt.xlim(xbounds)
-        plt.ylim(deathbounds)
-        #date_data = covid_ondate(dateid)
-        plot_classwise(date_data, 'continuum_class', xcol, deathcol, 'people/sqmi', 'deaths/sqmi', [np.log, linear], filename="output/deaths-{:03d}.png".format(dateid))
+        #plt.xlim(xbounds)
+        #plt.ylim(deathbounds)
+        ##date_data = covid_ondate(dateid)
+        #plot_classwise(date_data, 'continuum_class', xcol, deathcol, 'people/sqmi', 'deaths/sqmi', [np.log, linear], filename="output/deaths-{:03d}.png".format(dateid))
+        #plt.ylim(casebounds)
+        #plot_classwise(date_data, 'continuum_class', xcol, casecol, 'people/sqmi', 'cases/sqmi', [np.log, linear], filename="output/cases-{:03d}.png".format(dateid))
+        plt.xlim(incomebounds)
         plt.ylim(casebounds)
-        plot_classwise(date_data, 'continuum_class', xcol, casecol, 'people/sqmi', 'cases/sqmi', [np.log, linear], filename="output/cases-{:03d}.png".format(dateid))
+        plot_classwise(date_data, 'race_plurality', incomecol, casecol, 'med income', 'cases/sqmi', [linear, linear], filename="output/race-income-{:03d}.png".format(dateid))
 
 
 
