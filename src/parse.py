@@ -185,7 +185,7 @@ def entry():
     #setup metadata
     metadata = [
         gis_demo_data,
-        covid_data,
+        group_covid_data,
         unemployment_data,
         education_data
     ]

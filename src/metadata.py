@@ -32,6 +32,17 @@ covid_data = {
     ]
 }
 
+group_covid_data = {
+    "fn" : "group-covid-counties.csv",
+    "state_col" : "county",
+    "county_col" : "state",
+    "state_fmt" : "name",
+    "load_cols" : [
+        "start_date", "fips", "cases", "deaths"
+    ]
+
+}
+
 unemployment_data = {
     "fn" : "Unemployment.csv",
     "state_col" : "stabr",
@@ -41,6 +52,8 @@ unemployment_data = {
     "load_cols" : [
         "median_household_income_2018",
         "unemployment_rate_2018"
+        "rural_urban_continuum_code_2013",
+        "urban_influence_code_2013"
     ]
 }
 #"Unemployment and median household income for the U.S., States, and counties, 2000-19",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
